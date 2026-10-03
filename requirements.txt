@@ -1,0 +1,8 @@
+streamlit
+crewai
+litellm
+chromadb
+sentence-transformers
+python-docx
+matplotlib
+python-dotenv

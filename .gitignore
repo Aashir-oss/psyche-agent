@@ -1,0 +1,22 @@
+# secrets — never commit real keys
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+
+# runtime data: user assessments, embeddings, generated reports/graphs.
+# the app recreates these folders on first run (see src/config.py)
+data/
+*.db
+*.sqlite3
+
+# streamlit secrets
+.streamlit/secrets.toml
+
+# OS noise
+.DS_Store
+Thumbs.db
