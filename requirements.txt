@@ -1,7 +1,7 @@
 streamlit
 crewai
 litellm
-chromadb
+chromadb==1.5.9
 sentence-transformers
 python-docx
 matplotlib
