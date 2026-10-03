@@ -21,7 +21,23 @@ REPORTS_DIR = DATA_DIR / "reports"
 REPORTS_DIR.mkdir(exist_ok=True)
 KNOWLEDGE_DIR = Path(__file__).resolve().parent / "knowledge"
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+def _resolve_groq_key() -> str:
+    """API key from .env / environment first, then Streamlit secrets.
+
+    On Streamlit Cloud there is no .env file -- the key is entered in the
+    dashboard under Secrets, which this fallback reads.
+    """
+    key = os.getenv("GROQ_API_KEY", "")
+    if not key or "your-groq-key" in key:
+        try:
+            import streamlit as st
+            key = st.secrets.get("GROQ_API_KEY", "") or ""
+        except Exception:  # noqa: BLE001
+            key = ""
+    return "" if "your-groq-key" in key else key
+
+
+GROQ_API_KEY = _resolve_groq_key()
 
 # ---------------------------------------------------------------------------
 # FREE Groq models, quality-first assignment.
