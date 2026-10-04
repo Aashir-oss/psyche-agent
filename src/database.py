@@ -104,6 +104,7 @@ def init_db() -> None:
                 "sessions": ["user_id", "language"],
                 "assessments": ["user_id", "result_json"],
                 "learnings": ["user_id"],
+                "users": ["display_name"],
             }
             for table, cols_needed in needed.items():
                 cols = [r["name"] for r in
@@ -120,20 +121,32 @@ def init_db() -> None:
 
 # ---------------- users ----------------
 
-def get_or_create_user(username: str) -> dict:
-    """Identity anchor: return the existing profile or create a new one."""
+def get_or_create_user(username: str, display_name: str | None = None) -> dict:
+    """Identity anchor: return the existing profile or create a new one.
+
+    username is the stable website user id (identity key, never changes);
+    display_name is the friendly label shown in the UI (from the website's
+    ?name= parameter) so users never see a raw id.
+    """
     username = username.strip()
+    display_name = (display_name or "").strip() or None
     with _conn() as c:
         r = c.execute(
-            "SELECT id, username FROM users WHERE username=?", (username,)
+            "SELECT id, username, display_name FROM users WHERE username=?", (username,)
         ).fetchone()
         if r:
-            return dict(r)
+            d = dict(r)
+            if display_name and display_name != (d.get("display_name") or ""):
+                c.execute("UPDATE users SET display_name=? WHERE id=?",
+                          (display_name, d["id"]))
+                d["display_name"] = display_name
+            return d
         cur = c.execute(
-            "INSERT INTO users (username, created_at) VALUES (?,?)",
-            (username, _now()),
+            "INSERT INTO users (username, display_name, created_at) VALUES (?,?,?)",
+            (username, display_name, _now()),
         )
-        return {"id": cur.lastrowid, "username": username}
+        return {"id": cur.lastrowid, "username": username,
+                "display_name": display_name}
 
 
 def claim_orphan_sessions(user_id: int) -> None:

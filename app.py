@@ -68,7 +68,11 @@ if not GROQ_API_KEY or GROQ_API_KEY == "paste_your_key_here":
 def get_current_user() -> dict:
     handoff = st.session_state.get("authenticated_user_id") or st.query_params.get("uid")
     username = str(handoff).strip() if handoff else DEMO_USERNAME
-    user = db.get_or_create_user(username or DEMO_USERNAME)
+    # friendly display name from the website (?name=) so the UI never shows a
+    # raw user id; the uid stays the identity key
+    _dname = st.query_params.get("name")
+    user = db.get_or_create_user(username or DEMO_USERNAME,
+                                 display_name=str(_dname).strip() if _dname else None)
     db.claim_orphan_sessions(user["id"])
     return user
 
@@ -380,7 +384,8 @@ with st.sidebar:
         " <span style='color:#8b95ad'>(international)</span></div>",
         unsafe_allow_html=True,
     )
-    st.caption(f"👤 {user['username']}" + (" · demo" if demo_mode else "")
+    _who = user.get("display_name") or user["username"]
+    st.caption(f"👤 {_who}" + (" · demo" if demo_mode else "")
                + " · AI support, not a diagnosis.")
 
 # ---------------------------------------------------------------- main ------
@@ -950,7 +955,7 @@ with tab_report:
                     refs = [_enrich_reference({"id": t, "title": "", "source": ""})
                             for t in tids]
                 data = {
-                    "username": user["username"],
+                    "username": user.get("display_name") or user["username"],
                     "summary": p2["summary"],
                     "perspectives": [
                         {"name": p["name"], "hypothesis": p["hypothesis"],
