@@ -86,6 +86,28 @@ if "session_id" not in st.session_state:
     st.session_state.session_id = None
 
 
+# ------------------------------------------------------- logged-out page ---
+# Shown right after the sidebar "Log out" button is pressed. A fully
+# automatic redirect to the website is impossible: browsers block top-frame
+# navigation from inside Streamlit's sandboxed component frame. So logout
+# lands here — an unavoidable full-page screen with one big button to the
+# main website (its ?logout=1 also clears the website/Supabase session, so
+# this is a full sign-out on both sides).
+if st.session_state.get("_just_logged_out"):
+    del st.session_state["_just_logged_out"]
+    _site = str(st.secrets.get("WEBSITE_URL",
+                               "https://legendary-platypus-073e72.netlify.app")).rstrip("/")
+    _bye = _site + "/auth.html?logout=1"
+    components.html(
+        '<script>try{window.top.location.href="%s";}catch(e){}</script>' % _bye,
+        height=0,
+    )
+    hero("👋 You've been logged out", "Your sessions and reports are safe.")
+    st.link_button("← Back to Your Personal Psych website", _bye,
+                   type="primary", use_container_width=True)
+    st.stop()
+
+
 @st.cache_data
 def _card_lookup() -> dict:
     lookup = {}
@@ -389,27 +411,15 @@ with st.sidebar:
                + " · AI support, not a diagnosis.")
     if not demo_mode:
         if st.button("🚪 Log out", use_container_width=True, key="sidebar_logout"):
-            # Forget the auth handoff completely: wipe session state (so no
-            # previous-user data lingers) and clear the ?uid=/&name= URL params.
+            # Full logout: wipe the agent's session state (no previous-user
+            # data lingers) and clear the ?uid=/&name= URL params, then show
+            # the dedicated logged-out page (top of this file), which is the
+            # guaranteed way back to the main website.
             for _k in list(st.session_state.keys()):
                 del st.session_state[_k]
             st.query_params.clear()
-            _site = str(st.secrets.get("WEBSITE_URL",
-                                       "https://legendary-platypus-073e72.netlify.app")).rstrip("/")
-            _bye = _site + "/auth.html?logout=1"
-            # Best effort: automatic redirect back to the website (its
-            # ?logout=1 also clears the website/Supabase session, so this is
-            # a full sign-out on both sides). Note: browsers block top-frame
-            # navigation from inside Streamlit's sandboxed component frame,
-            # so this may silently fail — the button below always works.
-            components.html(
-                '<script>try{window.top.location.href="%s";}catch(e){}</script>' % _bye,
-                height=0,
-            )
-            st.success("You've been logged out of the agent.")
-            st.link_button("← Back to Your Personal Psych website", _bye,
-                           use_container_width=True)
-            st.stop()
+            st.session_state["_just_logged_out"] = True
+            st.rerun()
 
 # ---------------------------------------------------------------- main ------
 if not st.session_state.session_id:
