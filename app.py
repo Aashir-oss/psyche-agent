@@ -387,6 +387,15 @@ with st.sidebar:
     _who = user.get("display_name") or user["username"]
     st.caption(f"👤 {_who}" + (" · demo" if demo_mode else "")
                + " · AI support, not a diagnosis.")
+    if not demo_mode:
+        if st.button("🚪 Log out", use_container_width=True, key="sidebar_logout"):
+            # Forget the auth handoff completely: wipe session state (so no
+            # previous-user data lingers) and clear the ?uid=/&name= URL
+            # params, then reboot into demo mode.
+            for _k in list(st.session_state.keys()):
+                del st.session_state[_k]
+            st.query_params.clear()
+            st.rerun()
 
 # ---------------------------------------------------------------- main ------
 if not st.session_state.session_id:
