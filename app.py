@@ -390,19 +390,25 @@ with st.sidebar:
     if not demo_mode:
         if st.button("🚪 Log out", use_container_width=True, key="sidebar_logout"):
             # Forget the auth handoff completely: wipe session state (so no
-            # previous-user data lingers) and clear the ?uid=/&name= URL
-            # params, then send the user back to the main website. The
-            # website's ?logout=1 also clears its own (Supabase) session,
-            # so this is a full sign-out on both sides.
+            # previous-user data lingers) and clear the ?uid=/&name= URL params.
             for _k in list(st.session_state.keys()):
                 del st.session_state[_k]
             st.query_params.clear()
             _site = str(st.secrets.get("WEBSITE_URL",
                                        "https://legendary-platypus-073e72.netlify.app")).rstrip("/")
+            _bye = _site + "/auth.html?logout=1"
+            # Best effort: automatic redirect back to the website (its
+            # ?logout=1 also clears the website/Supabase session, so this is
+            # a full sign-out on both sides). Note: browsers block top-frame
+            # navigation from inside Streamlit's sandboxed component frame,
+            # so this may silently fail — the button below always works.
             components.html(
-                '<script>window.top.location.href = "%s/auth.html?logout=1";</script>' % _site,
+                '<script>try{window.top.location.href="%s";}catch(e){}</script>' % _bye,
                 height=0,
             )
+            st.success("You've been logged out of the agent.")
+            st.link_button("← Back to Your Personal Psych website", _bye,
+                           use_container_width=True)
             st.stop()
 
 # ---------------------------------------------------------------- main ------
