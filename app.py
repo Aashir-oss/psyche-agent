@@ -391,11 +391,19 @@ with st.sidebar:
         if st.button("🚪 Log out", use_container_width=True, key="sidebar_logout"):
             # Forget the auth handoff completely: wipe session state (so no
             # previous-user data lingers) and clear the ?uid=/&name= URL
-            # params, then reboot into demo mode.
+            # params, then send the user back to the main website. The
+            # website's ?logout=1 also clears its own (Supabase) session,
+            # so this is a full sign-out on both sides.
             for _k in list(st.session_state.keys()):
                 del st.session_state[_k]
             st.query_params.clear()
-            st.rerun()
+            _site = str(st.secrets.get("WEBSITE_URL",
+                                       "https://legendary-platypus-073e72.netlify.app")).rstrip("/")
+            components.html(
+                '<script>window.top.location.href = "%s/auth.html?logout=1";</script>' % _site,
+                height=0,
+            )
+            st.stop()
 
 # ---------------------------------------------------------------- main ------
 if not st.session_state.session_id:
